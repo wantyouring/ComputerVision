@@ -66,14 +66,6 @@ def cross_correlation_1d(img, kernel):
                                      kernel_size + j - (int)(kernel_size / 2):kernel_size + j + (int)(kernel_size / 2) + 1]
                 result_img[i][j] = cross_mat.sum()
 
-                '''
-                sum = 0
-                for k in range(0,kernel_size):
-
-                    sum += kernel[0][kernel_size-k-1] * padding_img[h+i-(int)(kernel_size/2)][w+j-(int)(kernel_size/2)+k] # convolutional
-                    # sum += kernel[0][k] * padding_img[h+i-(int)(kernel_size/2)][w+j-(int)(kernel_size/2)+k] # 그냥 correlation
-                result_img[i][j] = sum
-                '''
     # (n,1)의 1d kernel인 경우
     else:
         for i in range(0, h):
@@ -81,14 +73,6 @@ def cross_correlation_1d(img, kernel):
                 cross_mat = kernel * padding_img[kernel_size + i - (int)(kernel_size / 2):kernel_size + i + (int)(kernel_size / 2) + 1,
                                      kernel_size + j:kernel_size + j + 1]
                 result_img[i][j] = cross_mat.sum()
-
-                '''
-                sum = 0
-                for k in range(0,kernel_size):
-                    sum += kernel[kernel_size-k-1][0] * padding_img[h+i-(int)(kernel_size/2)+k][w+j-(int)(kernel_size/2)] # convolutional
-                    # sum += kernel[k][0] * padding_img[h+i-(int)(kernel_size/2)+k][w+j-(int)(kernel_size/2)] # 그냥 correlation
-                result_img[i][j] = sum
-                '''
 
     return result_img
 
@@ -109,19 +93,6 @@ def cross_correlation_2d(img, kernel):
                                  kernel_h + j - (int)(kernel_w / 2):kernel_h + j + (int)(kernel_w / 2) + 1]
             result_img[i][j] = cross_mat.sum()
 
-    '''
-
-    # convolution 기존 코드---
-    for i in range(0,h):
-        for j in range(0,w):
-            sum = 0
-            for p in range(0,kernel_h):
-                for q in range(0,kernel_w):
-                    # sum += kernel[p][q] * padding_img[h+i-(int)(kernel_h/2)+p][w+j-(int)(kernel_w/2)+q] # 이건 그냥 correlation
-                    sum += kernel[kernel_h - p - 1][kernel_w - q - 1] * padding_img[h + i - (int)(kernel_h / 2) + p][w + j - (int)(kernel_w / 2) + q] # cross-correlation. (convolution)
-            result_img[i][j] = sum
-    # ---
-    '''
     return result_img
 
 
@@ -144,11 +115,6 @@ def get_gaussian_filter_1d(size, sigma):
     sum = np.sum(gaussian_kernel_horizontal)  # hori,verti sum은 같음.
     gaussian_kernel_horizontal = gaussian_kernel_horizontal / sum
     gaussian_kernel_vertical = gaussian_kernel_vertical / sum
-
-    # for i in range(0,size):
-    #     gaussian_kernel_horizontal[0][i] = gaussian_kernel_horizontal[0][i]/sum
-    # for i in range(0,size):
-    #     gaussian_kernel_vertical[i][0] = gaussian_kernel_vertical[i][0]/sum
 
     return gaussian_kernel_horizontal, gaussian_kernel_vertical
 
@@ -184,10 +150,6 @@ def use_gaussian_filters(img):
             filtered_img = cross_correlation_2d(img, filter)
 
             imgs[kernel_size * h:kernel_size * h + h, sigma * w:sigma * w + w] = filtered_img[0:h, 0:w].copy()
-
-            # for i in range(0,h):
-            #    for j in range(0,w):
-            #        imgs[i+kernel_size * h][j+sigma * w] = filtered_img[i][j]
 
             cv2.putText(imgs, '{}x{} s={}'.format(kernel_sizes[kernel_size], kernel_sizes[kernel_size], sigmas[sigma]),
                         (10 + sigma * w, 10 + kernel_size * h), cv2.FONT_HERSHEY_COMPLEX, 0.4,
@@ -229,11 +191,7 @@ def compute_image_gradient(img):
     direction = np.zeros((h, w), dtype=np.float32)
     magnitude = np.zeros((h, w), dtype=np.float32)
 
-    # sobel filter x,y방향 적용하기 (conv버전)
-    # sobel_x_filter = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])  # x direction sobel filter
-    # sobel_y_filter = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
-
-    # sobel not conv 버전
+    # sobel correlation 버전
     sobel_x_filter = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])  # x direction sobel filter
     sobel_y_filter = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]])
 
@@ -292,10 +250,14 @@ def compute_corner_response(img):
     df_dx = cross_correlation_2d(img, sobel_x_filter)
     df_dy = cross_correlation_2d(img, sobel_y_filter)
 
+    #print('dx:{}\ndy:{}\n'.format(df_dx,df_dy))
+
     a = df_dx * df_dx
     b = df_dx * df_dy
     c = df_dx * df_dy
     d = df_dy * df_dy
+
+    #print('a:{}\nb:{}\nc:{}\nd:{}\n'.format(a,b,c,d))
 
     window = np.ones((5,5))
 
