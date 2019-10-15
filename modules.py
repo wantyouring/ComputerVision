@@ -14,78 +14,29 @@ def open_img(input_img_file_name):
     return gray
 
 # 1-1.gray 이미지 입력받아 (3*h,3*w) 크기의 패딩된 이미지 return.
-def padding(gray):
+def padding(gray,kernel_size):
     #start = time.time() # debug
 
     h, w = gray.shape  # h->i, w->j
-    padding_img = np.zeros((3 * h, 3 * w), dtype=np.float32)
-    padding_img2 = np.zeros((3 * h, 3 * w), dtype=np.float32)
+    padding_img = np.zeros((h+2*kernel_size,w+2*kernel_size), dtype=np.float32)
 
-    # for문 없애기 시도. 아직 잘 동작x
-    '''
-    padding_img2[0:h,0:w] = gray[0][0] # 좌상단 패딩
-    padding_img2[0:h,w:2*w] = gray[0,0:w].copy() # 중상단 패딩
-    padding_img2[0:h,2*w:3*w] = gray[0][w-1] # 우상단 패딩
-    #padding_img2[h:2*h,0:w] = np.tile(gray[0:h,0],w).copy()
-    padding_img2[h:2 * h, 0:w] = np.hstack(gray[0:h,0]*w).copy()
-    debug = np.hstack(gray[0:h,0]*w)
-    #padding_img[h:2*h,0:w] = gray[0:h,0].copy() # 좌중간 패딩
-    padding_img2[h:2*h,w:2*w] = gray[0:h,0:w].copy()# 정중앙 이미지 그대로
-    #padding_img2[h:2*h,2*w:3*w] = np.tile(gray[0:h,w-1],w).copy()
-    padding_img2[h:2*h,2*w:3*w] = np.hstack(gray[0:h, w-1] * w).copy()
-    #padding_img[h:2*h,2*w:3*w] = gray[0:h,w-1].copy()# 우중간 패딩
-    padding_img2[2*h:3*h,0:w] = gray[h-1][0]# 좌하단 패딩
-    padding_img2[2*h:3*h,w:2*w] = gray[h-1,0:w].copy()# 중간하단 패딩
-    padding_img2[2*h:3*h,2*w:3*w] = gray[h-1][w-1]# 우하단 패딩
-    '''
-    #'''
-    # 좌상단 패딩
-    for i in range(0, h):
-        for j in range(0, w):
-            padding_img[i][j] = gray[0][0]
-
-    # 중상단 패딩
-    for i in range(0, h):
-        for j in range(0, w):
-            padding_img[i][j + w] = gray[0][j]
-
-    # 우상단 패딩
-    for i in range(0, h):
-        for j in range(0, w):
-            padding_img[i][j + 2 * w] = gray[0][w - 1]
+    padding_img[0:kernel_size,0:kernel_size] = gray[0][0] # 좌상단 패딩
+    padding_img[0:kernel_size,kernel_size:kernel_size+w] = gray[0,0:w].copy() # 중상단 패딩
+    padding_img[0:kernel_size,kernel_size+w:kernel_size*2+w] = gray[0][w-1] # 우상단 패딩
 
     # 좌중간 패딩
-    for i in range(0, h):
-        for j in range(0, w):
-            padding_img[i + h][j] = gray[i][0]
-
-    # 정중앙 이미지 그대로
-    for i in range(0, h):
-        for j in range(0, w):
-            padding_img[i + h][j + w] = gray[i][j]
-
+    for i in range(kernel_size):
+        padding_img[kernel_size:kernel_size+h,i] = gray[0:h,0].copy()
     # 우중간 패딩
-    for i in range(0, h):
-        for j in range(0, w):
-            padding_img[i + h][j + 2 * w] = gray[i][w - 1]
+    for i in range(kernel_size):
+        padding_img[kernel_size:kernel_size+h,kernel_size+w+i] = gray[0:h,w-1].copy()
 
-    # 좌하단 패딩
-    for i in range(0, h):
-        for j in range(0, w):
-            padding_img[i + 2 * h][j] = gray[h - 1][0]
+    padding_img[kernel_size:kernel_size+h,kernel_size:kernel_size+w] = gray[0:h, 0:w].copy() # 정중앙 이미지 그대로
+    padding_img[kernel_size+h:kernel_size*2+h, 0:kernel_size] = gray[h-1][0] # 좌하단 패딩
+    padding_img[kernel_size+h:kernel_size*2+h, kernel_size:kernel_size+w] = gray[h - 1, 0:w].copy()  # 중간하단 패딩
+    padding_img[kernel_size+h:kernel_size*2+h, kernel_size+w:kernel_size*2+w] = gray[h - 1][w - 1]  # 우하단 패딩
 
-    # 중간하단 패딩
-    for i in range(0, h):
-        for j in range(0, w):
-            padding_img[i + 2 * h][j + w] = gray[h - 1][j]
-
-    # 우하단 패딩
-    for i in range(0, h):
-        for j in range(0, w):
-            padding_img[i + 2 * h][j + 2 * w] = gray[h - 1][w - 1]
-    #'''
-    #cv2.imshow('padding',padding_img)
-    #cv2.imshow('padding2', padding_img2)
+    #cv2.imshow('padding', padding_img)
     #compute_time = time.time() - start  # debug
     #print('padding time : {}'.format(compute_time))
     return padding_img
@@ -95,7 +46,6 @@ def padding(gray):
 def cross_correlation_1d(img, kernel):
     h, w = img.shape  # h->i, w->j
     result_img = np.zeros((h, w), dtype=np.float32)
-    padding_img = padding(img)
 
     # kernel이 (1,n)인지 (n,1)인지 확인
     i, j = kernel.shape
@@ -106,12 +56,14 @@ def cross_correlation_1d(img, kernel):
         horizontal = False
         kernel_size = kernel.shape[0]
 
+    padding_img = padding(img, kernel_size)
+
     # (1,n)의 1d kernel인 경우
     if horizontal:
         for i in range(0, h):
             for j in range(0, w):
-                cross_mat = kernel * padding_img[h + i:h + i + 1,
-                                     w + j - (int)(kernel_size / 2):w + j + (int)(kernel_size / 2) + 1]
+                cross_mat = kernel * padding_img[kernel_size + i:kernel_size + i + 1,
+                                     kernel_size + j - (int)(kernel_size / 2):kernel_size + j + (int)(kernel_size / 2) + 1]
                 result_img[i][j] = cross_mat.sum()
 
                 '''
@@ -126,8 +78,8 @@ def cross_correlation_1d(img, kernel):
     else:
         for i in range(0, h):
             for j in range(0, w):
-                cross_mat = kernel * padding_img[h + i - (int)(kernel_size / 2):h + i + (int)(kernel_size / 2) + 1,
-                                     w + j:w + j + 1]
+                cross_mat = kernel * padding_img[kernel_size + i - (int)(kernel_size / 2):kernel_size + i + (int)(kernel_size / 2) + 1,
+                                     kernel_size + j:kernel_size + j + 1]
                 result_img[i][j] = cross_mat.sum()
 
                 '''
@@ -145,15 +97,16 @@ def cross_correlation_1d(img, kernel):
 def cross_correlation_2d(img, kernel):
     h, w = img.shape  # h->i, w->j
     result_img = np.zeros((h, w), dtype=np.float32)
-    padding_img = padding(img)
 
     # kernel
     kernel_h, kernel_w = kernel.shape
 
+    padding_img = padding(img,kernel_h)
+
     for i in range(0, h):
         for j in range(0, w):
-            cross_mat = kernel * padding_img[h + i - (int)(kernel_h / 2):h + i + (int)(kernel_h / 2) + 1,
-                                 w + j - (int)(kernel_w / 2):w + j + (int)(kernel_w / 2) + 1]
+            cross_mat = kernel * padding_img[kernel_h + i - (int)(kernel_h / 2):kernel_h + i + (int)(kernel_h / 2) + 1,
+                                 kernel_h + j - (int)(kernel_w / 2):kernel_h + j + (int)(kernel_w / 2) + 1]
             result_img[i][j] = cross_mat.sum()
 
     '''
@@ -363,12 +316,12 @@ def compute_corner_response(img):
 def non_maximum_suppression_win(R,winSize):
     h,w = R.shape
     suppressed_R = np.zeros((h, w), dtype=np.float32)
-    padded_suppressed_R = padding(R) # padding시 i,j 대신 h+i, w+j로 바꿔주기.
+    padded_suppressed_R = padding(R,winSize) # padding시 i,j 대신 h+i, w+j로 바꿔주기.
 
     for i in range(0,h):
         for j in range(0,w):
             # suppressed_R[i][j] = R[i][j] if R[i-(int)(winSize/2):i+(int)(winSize/2)+1,j-(int)(winSize/2):j+(int)(winSize/2)+1].max() > 0.1 else 0 # padding없을때
-            local_max = np.max(padded_suppressed_R[h + i - (int)(winSize / 2):h + i + (int)(winSize / 2) + 1, w + j - (int)(winSize / 2):w + j + (int)(winSize / 2) + 1])
+            local_max = np.max(padded_suppressed_R[winSize + i - (int)(winSize / 2):winSize + i + (int)(winSize / 2) + 1, winSize + j - (int)(winSize / 2):winSize + j + (int)(winSize / 2) + 1])
             suppressed_R[i][j] = R[i][j] if (local_max > 0.1 and local_max == R[i][j]) else 0 # a if test else b
 
     return suppressed_R
