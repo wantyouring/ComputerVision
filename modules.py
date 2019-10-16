@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import time
 import os
+from numpy.lib.stride_tricks import as_strided
 from math import *
 
 # 이미지파일 열기.
@@ -16,7 +17,7 @@ def open_img(input_img_file_name):
 # 1-1.gray 이미지 입력받아 (3*h,3*w) 크기의 패딩된 이미지 return.
 def padding(gray,kernel_size):
     #start = time.time() # debug
-
+    kernel_size = int(kernel_size/2)###
     h, w = gray.shape  # h->i, w->j
     padding_img = np.zeros((h+2*kernel_size,w+2*kernel_size), dtype=np.float32)
 
@@ -45,53 +46,48 @@ def padding(gray,kernel_size):
 # 1-1.1d cross correlation 함수로 img에 kernel적용한 결과 return.
 def cross_correlation_1d(img, kernel):
     h, w = img.shape  # h->i, w->j
-    result_img = np.zeros((h, w), dtype=np.float32)
-
+    #print('1d original shape : {}'.format(img.shape))
     # kernel이 (1,n)인지 (n,1)인지 확인
     i, j = kernel.shape
+    #print('kernel shape : {}'.format(kernel.shape))
     if i == 1:
-        horizontal = True
         kernel_size = kernel.shape[1]
     else:
-        horizontal = False
         kernel_size = kernel.shape[0]
 
     padding_img = padding(img, kernel_size)
+    strided_img = as_strided(padding_img,
+                             (padding_img.shape[0] - kernel.shape[0] + 1, padding_img.shape[1] - kernel.shape[1] + 1,
+                              kernel.shape[0], kernel.shape[1]),
+                             (padding_img.strides[0], padding_img.strides[1], padding_img.strides[0],
+                              padding_img.strides[1]))
+    result_img = np.einsum('abcd,cd->ab', strided_img, kernel)
+    half_k = int(kernel_size/2)
 
-    # (1,n)의 1d kernel인 경우
-    if horizontal:
-        for i in range(0, h):
-            for j in range(0, w):
-                cross_mat = kernel * padding_img[kernel_size + i:kernel_size + i + 1,
-                                     kernel_size + j - (int)(kernel_size / 2):kernel_size + j + (int)(kernel_size / 2) + 1]
-                result_img[i][j] = cross_mat.sum()
-
-    # (n,1)의 1d kernel인 경우
+    if i == 1:
+        result = result_img[half_k:half_k+h,0:w].copy()
     else:
-        for i in range(0, h):
-            for j in range(0, w):
-                cross_mat = kernel * padding_img[kernel_size + i - (int)(kernel_size / 2):kernel_size + i + (int)(kernel_size / 2) + 1,
-                                     kernel_size + j:kernel_size + j + 1]
-                result_img[i][j] = cross_mat.sum()
+        result = result_img[0:h, half_k:half_k+w].copy()
 
-    return result_img
+    #print('1d einsum shape : {}'.format(result_img.shape))
+    return result
 
 
 # 1-1.2d cross correlation 함수로 img에 kernel적용한 결과 return.
 def cross_correlation_2d(img, kernel):
     h, w = img.shape  # h->i, w->j
-    result_img = np.zeros((h, w), dtype=np.float32)
+    #print('2d original shape : {}'.format(img.shape))
 
-    # kernel
+    # kernel 정사각형
     kernel_h, kernel_w = kernel.shape
 
     padding_img = padding(img,kernel_h)
-
-    for i in range(0, h):
-        for j in range(0, w):
-            cross_mat = kernel * padding_img[kernel_h + i - (int)(kernel_h / 2):kernel_h + i + (int)(kernel_h / 2) + 1,
-                                 kernel_h + j - (int)(kernel_w / 2):kernel_h + j + (int)(kernel_w / 2) + 1]
-            result_img[i][j] = cross_mat.sum()
+    # einsum 사용버전
+    strided_img = as_strided(padding_img,
+                             (padding_img.shape[0] - kernel_h + 1, padding_img.shape[1] - kernel_h + 1, kernel_h,kernel_h),
+                             (padding_img.strides[0],padding_img.strides[1],padding_img.strides[0],padding_img.strides[1]))
+    result_img = np.einsum('abcd,cd->ab',strided_img,kernel)
+    #print('2d einsum shape : {}'.format(result_img.shape))
 
     return result_img
 
@@ -277,14 +273,21 @@ def compute_corner_response(img):
 
 def non_maximum_suppression_win(R,winSize):
     h,w = R.shape
+    #print('original shape : {}'.format(R.shape))
     suppressed_R = np.zeros((h, w), dtype=np.float32)
     padded_suppressed_R = padding(R,winSize) # padding시 i,j 대신 h+i, w+j로 바꿔주기.
+    #print('padded_sup_R shape : {}'.format(padded_suppressed_R.shape))
 
     for i in range(0,h):
         for j in range(0,w):
-            # suppressed_R[i][j] = R[i][j] if R[i-(int)(winSize/2):i+(int)(winSize/2)+1,j-(int)(winSize/2):j+(int)(winSize/2)+1].max() > 0.1 else 0 # padding없을때
-            local_max = np.max(padded_suppressed_R[winSize + i - (int)(winSize / 2):winSize + i + (int)(winSize / 2) + 1, winSize + j - (int)(winSize / 2):winSize + j + (int)(winSize / 2) + 1])
-            suppressed_R[i][j] = R[i][j] if (local_max > 0.1 and local_max == R[i][j]) else 0 # a if test else b
+            if i-(int)(winSize/2)>=0 and i+(int)(winSize/2)+1<h and j-(int)(winSize/2)>=0 and j+(int)(winSize/2)+1<w:
+                local_max = np.max(R[i-(int)(winSize/2):i+(int)(winSize/2)+1,j-(int)(winSize/2):j+(int)(winSize/2)+1])
+                suppressed_R[i][j] = R[i][j] if (local_max > 0.1 and local_max == R[i][j]) else 0  # a if test else b
+
+                #suppressed_R[i][j] = R[i][j] if R[i-(int)(winSize/2):i+(int)(winSize/2)+1,j-(int)(winSize/2):j+(int)(winSize/2)+1].max() > 0.1 else 0 # padding없을때
+
+                #local_max = np.max(padded_suppressed_R[winSize + i - (int)(winSize / 2):winSize + i + (int)(winSize / 2) + 1, winSize + j - (int)(winSize / 2):winSize + j + (int)(winSize / 2) + 1])
+                #suppressed_R[i][j] = R[i][j] if (local_max > 0.1 and local_max == R[i][j]) else 0 # a if test else b
 
     return suppressed_R
 
@@ -361,7 +364,7 @@ def a1_corner_detection_result(input_img_file_name, gray):
     for i in range(0, h):
         for j in range(0, w):
             if suppressed_R[i][j] > 0.1:
-                cv2.circle(rgb_img, (j, i), 3, (0, 255, 0), 1)
+                cv2.circle(rgb_img, (j, i), 4, (0, 255, 0), 1)
 
     cv2.imwrite("./result/part_3_corner_sup_{}".format(input_img_file_name), rgb_img)
     cv2.imshow("part_3_corner_sup_{}".format(input_img_file_name), rgb_img)
