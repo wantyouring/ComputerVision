@@ -48,6 +48,8 @@ M_ENLARGE_Y = [[1, 0, 0],
                [0, 1.05, 0],
                [0, 0, 1]]
 
+result_xy = []
+
 # 이미지파일 열기.
 def open_img(input_img_file_name):
     if not os.path.exists('./result'):
@@ -69,7 +71,7 @@ def xy_cor(x,y):
 
 def paint(plane,img_at):
     for ele in img_at:
-        i,j = ij(ele[0], ele[1])
+        i,j = ij(int(ele[0]), int(ele[1]))
         plane[i][j] = 0 #ele[2] # 검정으로 칠할지 색정보 넣을지?
     return plane
 
@@ -81,28 +83,32 @@ def paint(plane,img_at):
 # 스마일 좌표 [x,y]들 저장.
 
 def get_transformed_image(img,M):
+    global result_xy
     plane = np.ones((801,801),dtype=np.float32)
-
-    # cv2.arrowedLine(plane,ij(400,0),ij(-400,0),0)
-    # cv2.arrowedLine(plane,ij(0,400),ij(0,-400),0)
 
     h,w = img.shape
     img_xy = []
+    if M == M_IDENTITY:
+        print("clear")
+        # img 원점에 놓았을 때 좌표들 img_xy 리스트에 추가해주기.
+        # (?) for문 안쓰고 속도 빠르게 가능한지?
+        for i in range(0,h):
+            for j in range(0,w):
+                if img[i][j] != 1:
+                    img_xy.append([j-int(w/2),int(h/2)-i,1])
+        img_xy = np.array(img_xy)
+        result_xy = np.copy(img_xy)
 
-    # img 원점에 놓았을 때 좌표들 img_xy 리스트에 추가해주기.
-    for i in range(0,h):
-        for j in range(0,w):
-            if img[i][j] != 1:
-                img_xy.append([j-int(w/2),int(h/2)-i,1])
     print("h:{},w:{}".format(h,w))
     print(img_xy)
     print("img_xy shape : {} \n M shape : {}".format(np.shape(img_xy),np.shape(M)))
 
+    img_xy = result_xy
     # M tranformation 하기
     # nx3 * 3x3 = nx3 matrix.
     result_xy = np.dot(img_xy,M)
     print("result : {}".format(result_xy))
-    result_xy = result_xy.astype(int)
+    #result_xy = result_xy.astype(int) #정보손실 있음
     result_plane = paint(plane,result_xy)
     print("result_plane type : {}".format(np.shape(result_plane)))
 
