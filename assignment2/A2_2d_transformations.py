@@ -11,46 +11,44 @@ def main():
     cv2.arrowedLine(plane_draw, ij(400, 0), ij(-400, 0), 0)  # 함수 자체에서 xy로 받아 순서 바꿔줬음
     cv2.arrowedLine(plane_draw, ij(0, 400), ij(0, -400), 0)
     cv2.imshow('test', init_plane)
-    cv2.waitKey(1)
 
     while True:
-        pressed_key = input("put key : ")
-        #plane_draw = np.copy(plane) # 그림 계속 그리며 출력할 plane
+        pressed_key = cv2.waitKey(1)
 
-        if pressed_key == 'a':
+        if pressed_key == ord('a'):
             smile_plane = get_transformed_image(smile_plane,M_MOVE_MINUS_X)
-        elif pressed_key == 'd':
+        elif pressed_key == ord('d'):
             smile_plane = get_transformed_image(smile_plane, M_MOVE_PLUS_X)
-        elif pressed_key == 'w':
+        elif pressed_key == ord('w'):
             smile_plane = get_transformed_image(smile_plane, M_MOVE_PLUS_Y)
-        elif pressed_key == 's':
+        elif pressed_key == ord('s'):
             smile_plane = get_transformed_image(smile_plane, M_MOVE_MINUS_Y)
             # 회전이동
-        elif pressed_key == 'r':
+        elif pressed_key == ord('r'):
             smile_plane = get_transformed_image(smile_plane, M_ROTATE_COUNTER_CLOCK)
-        elif pressed_key == 'R':
+        elif pressed_key == ord('R'):
             smile_plane = get_transformed_image(smile_plane, M_ROTATE_CLOCK)
             # axis flip
-        elif pressed_key == 'f':
+        elif pressed_key == ord('f'):
             smile_plane = get_transformed_image(smile_plane, M_FLIP_Y_AXIS)
-        elif pressed_key == 'F':
+        elif pressed_key == ord('F'):
             smile_plane = get_transformed_image(smile_plane, M_FLIP_X_AXIS)
             # x,y방향 확대, 축소
-        elif pressed_key == 'x':
+        elif pressed_key == ord('x'):
             smile_plane = get_transformed_image(smile_plane, M_SHRINK_X)
-        elif pressed_key == 'X':
+        elif pressed_key == ord('X'):
             smile_plane = get_transformed_image(smile_plane, M_ENLARGE_X)
-        elif pressed_key == 'y':
+        elif pressed_key == ord('y'):
             smile_plane = get_transformed_image(smile_plane, M_SHRINK_Y)
-        elif pressed_key == 'Y':
+        elif pressed_key == ord('Y'):
             smile_plane = get_transformed_image(smile_plane, M_ENLARGE_Y)
-        elif pressed_key == 'R':
+        elif pressed_key == ord('R'):
             smile_plane = get_transformed_image(smile_plane,M_ROTATE_COUNTER_CLOCK)
-        elif pressed_key == 'H':
+        elif pressed_key == ord('H'):
             smile_plane = get_transformed_image(init_plane,M_IDENTITY)
 
         # 종료
-        elif pressed_key == 'Q':
+        elif pressed_key == ord('Q'):
             cv2.destroyAllWindows()
             return
 
@@ -59,7 +57,6 @@ def main():
         cv2.arrowedLine(plane_draw, ij(0, 400), ij(0, -400), 0)
 
         cv2.imshow('test',plane_draw)
-        cv2.waitKey(1)
 
     print('-----A2_2d_transformations end-----')
 

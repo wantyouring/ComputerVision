@@ -60,27 +60,15 @@ def open_img(input_img_file_name):
     return gray
 
 def ij(x,y):
-    # 400,400 -> 0,0
-    # return 400+y, 400-x
     return 400 - y, 400 + x
 def xy(i,j):
     return j-400, 400-i
-
-def xy_cor(x,y):
-    return x+400,-y+400
 
 def paint(plane,img_at):
     for ele in img_at:
         i,j = ij(int(ele[0]), int(ele[1]))
         plane[i][j] = 0 #ele[2] # 검정으로 칠할지 색정보 넣을지?
     return plane
-
-
-#
-# def xy(i,j):
-#     return j,-i
-
-# 스마일 좌표 [x,y]들 저장.
 
 def get_transformed_image(img,M):
     global result_xy
@@ -89,7 +77,6 @@ def get_transformed_image(img,M):
     h,w = img.shape
     img_xy = []
     if M == M_IDENTITY:
-        print("clear")
         # img 원점에 놓았을 때 좌표들 img_xy 리스트에 추가해주기.
         # (?) for문 안쓰고 속도 빠르게 가능한지?
         for i in range(0,h):
@@ -99,17 +86,14 @@ def get_transformed_image(img,M):
         img_xy = np.array(img_xy)
         result_xy = np.copy(img_xy)
 
-    print("h:{},w:{}".format(h,w))
-    print(img_xy)
-    print("img_xy shape : {} \n M shape : {}".format(np.shape(img_xy),np.shape(M)))
+    # print("h:{},w:{}".format(h,w))
+    # print(img_xy)
+    # print("img_xy shape : {} \n M shape : {}".format(np.shape(img_xy),np.shape(M)))
 
     img_xy = result_xy
     # M tranformation 하기
     # nx3 * 3x3 = nx3 matrix.
     result_xy = np.dot(img_xy,M)
-    print("result : {}".format(result_xy))
-    #result_xy = result_xy.astype(int) #정보손실 있음
     result_plane = paint(plane,result_xy)
-    print("result_plane type : {}".format(np.shape(result_plane)))
 
     return result_plane
