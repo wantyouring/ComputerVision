@@ -52,8 +52,6 @@ result_xy = []
 
 # 이미지파일 열기.
 def open_img(input_img_file_name):
-    if not os.path.exists('./result'):
-        os.makedirs('./result')
     gray = cv2.imread(input_img_file_name, cv2.IMREAD_GRAYSCALE)
     gray = gray / 255  # 0~1 scaling
     gray = gray.astype('float32')
