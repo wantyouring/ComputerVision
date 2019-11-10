@@ -1,6 +1,7 @@
 
 from modules import *
 
+### solve 초안
 # top 10 feature matching을 어떻게 할 것인가???. matcher 구현하기 문제.
 # orb similarity는 hamming distance로 계산.
 # 이미지의 key point와 descriptor.
@@ -9,43 +10,57 @@ from modules import *
 # ㄴ 매칭한 hamming distance 저장하는건 제일 잘 매칭되는 top10 뽑기 위해서.
 # top 10 match point 출력하기.
 
-def main():
-    img_desk = 'cv_desk.PNG'
-    img_cover = 'cv_cover.jpg'
+### 최종 solve
+# A의 i번째 descriptor와 가장 일치하는 B의 descriptor 찾아 DMatch obj로 matches에 저장.
 
+def main():
     gray_desk = cv2.imread('cv_desk.PNG', cv2.IMREAD_GRAYSCALE)
     gray_cover = cv2.imread('cv_cover.jpg', cv2.IMREAD_GRAYSCALE)
-    img2 = None
 
     orb = cv2.ORB_create()
+
+    # desk 그림
     kp1 = orb.detect(gray_desk, None)
     kp1, des1 = orb.compute(gray_desk, kp1)
     print("kp : {} \n des : {} \n".format(np.shape(kp1),np.shape(des1)))
 
-    # img2 = cv2.drawKeypoints(gray_desk, kp, img2, (0, 0, 255))
-    # cv2.imshow('orb', img2)
-    # cv2.waitKey(0)
-
-
-
+    # cover 그림
     kp2 = orb.detect(gray_cover, None)
     kp2, des2 = orb.compute(gray_cover, kp2)
     print("kp : {} \n des : {} \n".format(np.shape(kp2), np.shape(des2)))
 
-    bf = cv2.BFMatcher(cv2.NORM_HAMMING)
-    matches = bf.match(des1,des2)
+    ham_dis = cv2.norm(des1[0],des2[1],cv2.NORM_HAMMING)
+    print("ham_dis : {}, ham_dis_shape : {}".format(ham_dis,np.shape(ham_dis)))
+
+    matches = []
+    min_ham_dis_save = []
+
+    for i in range(len(kp1)):
+        min_ham_dis = 100000000
+        for j in range(len(kp2)):
+            ham_dis = cv2.norm(des1[i], des2[j], cv2.NORM_HAMMING)
+
+            if min_ham_dis > ham_dis:
+                min_ham_dis = ham_dis
+                min_index = j
+
+        # save shortest hamming distance property
+        match_obj = cv2.DMatch(_queryIdx=i,_trainIdx=min_index,_distance=min_ham_dis)
+        matches.append(match_obj)
+        # min_ham_dis_save.append(min_ham_dis) # cv2 DMatch object 자체에서 distance 저장 변수가 있었음.
+    matches = sorted(matches,key=lambda obj:obj.distance) # distance 기준 정렬
+
+    # bf = cv2.BFMatcher(cv2.NORM_HAMMING)
+    # matches = bf.match(des1,des2) # kp1[i] -> kp2[matches[i]]
 
     print("matches shape : {}, matches : {}".format(np.shape(matches),matches))
-    print("match 1 element : {}".format(matches[0]))
+    print("match 1 element : distance{}\n trainidx:{}\n queryidx:{}\n imgidx:{}".
+          format(matches[2].distance,matches[2].trainIdx,matches[2].queryIdx,matches[2].imgIdx))
     res = None
-    res = cv2.drawMatches(gray_desk,kp1,gray_cover,kp2,matches[:30],res)
+
+    res = cv2.drawMatches(gray_desk,kp1,gray_cover,kp2,matches[:10],res,flags=2) # flags=2 option single points 없애줌.
     cv2.imshow('res',res)
     cv2.waitKey(0)
-    # img2 = cv2.drawKeypoints(gray_cover,kp,img2,(0,0,255))
-    # cv2.imshow('orb',img2)
-    # cv2.waitKey(0)
-
-    # hamming distance로 top10 match pairs 구하기.
 
 
 if __name__ == '__main__':
