@@ -1,7 +1,6 @@
 from modules import *
 
 def main():
-    print('-----A2_2d_transformations start-----')
     input_img_file_name = 'smile.PNG'
     gray = open_img(input_img_file_name)
     M = M_IDENTITY
@@ -10,10 +9,10 @@ def main():
     plane_draw = np.copy(init_plane) # 화살표 함께 출력하는 plane.
     cv2.arrowedLine(plane_draw, ij(400, 0), ij(-400, 0), 0)  # 함수 자체에서 xy로 받아 순서 바꿔줬음
     cv2.arrowedLine(plane_draw, ij(0, 400), ij(0, -400), 0)
-    cv2.imshow('test', init_plane)
+    cv2.imshow('test', plane_draw)
 
     while True:
-        pressed_key = cv2.waitKey(1)
+        pressed_key = cv2.waitKey(0)
 
         if pressed_key == ord('a'):
             smile_plane = get_transformed_image(smile_plane,M_MOVE_MINUS_X)
@@ -42,8 +41,6 @@ def main():
             smile_plane = get_transformed_image(smile_plane, M_SHRINK_Y)
         elif pressed_key == ord('Y'):
             smile_plane = get_transformed_image(smile_plane, M_ENLARGE_Y)
-        elif pressed_key == ord('R'):
-            smile_plane = get_transformed_image(smile_plane,M_ROTATE_COUNTER_CLOCK)
         elif pressed_key == ord('H'):
             smile_plane = get_transformed_image(init_plane,M_IDENTITY)
 
@@ -51,17 +48,13 @@ def main():
         elif pressed_key == ord('Q'):
             cv2.destroyAllWindows()
             return
+        else:
+            continue
 
         plane_draw = np.copy(smile_plane) # 화살표까지 그리는 plane
         cv2.arrowedLine(plane_draw, ij(400, 0), ij(-400, 0), 0) # 함수 자체에서 xy로 받아 순서 바꿔줬음
         cv2.arrowedLine(plane_draw, ij(0, 400), ij(0, -400), 0)
-
         cv2.imshow('test',plane_draw)
-
-    print('-----A2_2d_transformations end-----')
-
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     main()
