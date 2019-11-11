@@ -95,3 +95,71 @@ def get_transformed_image(img,M):
     result_plane = paint(plane,result_xy)
 
     return result_plane
+
+# 2-2
+def compute_homography(srcP, destP):
+    '''
+
+    :param srcP: N x 2 src의 매칭되는 feature points 좌표들
+    :param destP: N x 2 dest의 매칭되는 feature points 좌표들
+    :return: 변환하는 3 x 3 size H 행렬
+    '''
+    H = np.zeros((3,3),dtype=float)
+    N = len(srcP)
+
+    # mean subtraction
+    sum_s_x, sum_s_y, sum_d_x, sum_d_y = 0,0,0,0
+
+    for i in range(N):
+        sum_s_x += srcP[i][0]
+        sum_s_y += srcP[i][1]
+        sum_d_x += destP[i][0]
+        sum_d_y += destP[i][1]
+
+    mean_s_x, mean_s_y = sum_s_x / N, sum_s_y / N
+    mean_d_x, mean_d_y = sum_d_x / N, sum_d_y / N
+
+    for i in range(N):
+        srcP[i][0] -= mean_s_x
+        srcP[i][1] -= mean_s_y
+        destP[i][0] -= mean_d_x
+        destP[i][1] -= mean_d_y
+
+    # scaling
+    longest_s = np.max(np.abs(srcP))
+    longest_d = np.max(np.abs(destP))
+
+    mean_sub_M_s = [[1, 0, -mean_s_x],
+                    [0, 1, -mean_s_y],
+                    [0, 0, 1]]
+    scal_M_s = [[1/longest_s, 0, 0],
+                [0, 1/longest_s, 0],
+                [0, 0, 1]]
+    mean_sub_M_d = [[1, 0, -mean_d_x],
+                    [0, 1, -mean_d_y],
+                    [0, 0, 1]]
+    scal_M_d = [[1/longest_d, 0, 0],
+                [0, 1/longest_d, 0],
+                [0, 0, 1]]
+
+    Ts = np.dot(np.array(mean_sub_M_s),np.array(scal_M_s))
+    Td = np.dot(np.array(mean_sub_M_d),np.array(scal_M_d))
+
+    # computing Hn
+    # A = 2N x 9 matrix
+
+    for i in range(N):
+        xs,xd,ys,yd = srcP[i][0],srcP[i][1],destP[i][0],destP[i][1]
+        Ai = [-xs,-ys,-1,0,0,0,xs*xd,ys,xd,0,0,0,-xs,-ys,-1,xs*yd,ys*yd,yd]
+        Ai = np.reshape(Ai,(2,9))
+        if i==0:
+            A = Ai
+        else:
+            A = np.vstack([A,Ai])
+
+    print("A:{}\nN:{}\n".format(np.shape(A),N))
+    u,s,vh = np.linalg.svd(A)
+
+    print("u:{}\ns:{}\nvh:{}\n".format(np.shape(u),np.shape(s),np.shape(vh)))
+
+    return H
