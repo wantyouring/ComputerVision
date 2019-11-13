@@ -73,7 +73,7 @@ def main():
     srcP = np.array(srcP)  # shape of srcP : (N,2) (N = 500)
     destP = np.array(destP)
 
-    print("srcP shape:{}".format(np.shape(srcP)))
+    # print("srcP shape:{}".format(np.shape(srcP)))
 
     # for i in range(10):
     #     print("matches{}:{}".format(i,matches[i].distance))
@@ -116,8 +116,11 @@ def main():
     #         x_, y_, z_ = result_m[0][0], result_m[1][0], result_m[2][0]
     #         warp_plane[int(x_/z_)][int(y_/z_)] = gray_cover[i][j]
 
+    H_ransac = compute_homography_ransac(srcP,destP,25)
+    dst2 = cv2.warpPerspective(gray_cover, H_ransac, (w_desk, h_desk))
 
-    cv2.imshow("warp",dst)
+    cv2.imshow("homography",dst)
+    cv2.imshow("ransac",dst2)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
