@@ -104,8 +104,9 @@ def compute_homography(srcP, destP):
     :param destP: N x 2 dest의 매칭되는 feature points 좌표들
     :return: 변환하는 3 x 3 size H 행렬
     '''
-    H = np.zeros((3,3),dtype=float)
-    N = len(srcP)
+    N = 26# len(srcP)
+
+    # print("srcP:{},{}".format(srcP[400][0],srcP[400][1]))
 
     # mean subtraction
     sum_s_x, sum_s_y, sum_d_x, sum_d_y = 0,0,0,0
@@ -119,6 +120,9 @@ def compute_homography(srcP, destP):
     mean_s_x, mean_s_y = sum_s_x / N, sum_s_y / N
     mean_d_x, mean_d_y = sum_d_x / N, sum_d_y / N
 
+    # print("mean_s:{},{}".format(mean_s_x,mean_s_y))
+    # print("mean_d:{},{}".format(mean_d_x, mean_d_y))
+
     for i in range(N):
         srcP[i][0] -= mean_s_x
         srcP[i][1] -= mean_s_y
@@ -126,31 +130,50 @@ def compute_homography(srcP, destP):
         destP[i][1] -= mean_d_y
 
     # scaling
-    longest_s = np.max(np.abs(srcP))
-    longest_d = np.max(np.abs(destP))
+    longest_s = 0
+    longest_d = 0
+    for i in range(N):
+        tmp = srcP[i][0]**2 + srcP[i][1]**2
+        if longest_s**2 < tmp:
+            longest_s = sqrt(tmp)
+        tmp = destP[i][0]**2 + destP[i][1]**2
+        if longest_d**2 < tmp:
+            longest_d = sqrt(tmp)
+        # if i<10:
+        #     print("srcP_d : {}".format(sqrt(srcP[i][0]**2 + srcP[i][1]**2)))
+        #     print("destP_d : {}".format(sqrt(destP[i][0] ** 2 + destP[i][1] ** 2)))
+    # longest_s = np.max(np.abs(srcP))
+    # longest_d = np.max(np.abs(destP))
+
+    srcP = srcP * sqrt(2) / longest_s
+    destP = destP * sqrt(2) / longest_d
+
+    # print("l_s:{}\nl_d:{}".format(longest_s,longest_d))
 
     mean_sub_M_s = [[1, 0, -mean_s_x],
                     [0, 1, -mean_s_y],
                     [0, 0, 1]]
-    scal_M_s = [[1/longest_s, 0, 0],
-                [0, 1/longest_s, 0],
+    scal_M_s = [[sqrt(2)/longest_s, 0, 0],
+                [0, sqrt(2)/longest_s, 0],
                 [0, 0, 1]]
     mean_sub_M_d = [[1, 0, -mean_d_x],
                     [0, 1, -mean_d_y],
                     [0, 0, 1]]
-    scal_M_d = [[1/longest_d, 0, 0],
-                [0, 1/longest_d, 0],
+    scal_M_d = [[sqrt(2)/longest_d, 0, 0],
+                [0, sqrt(2)/longest_d, 0],
                 [0, 0, 1]]
 
-    Ts = np.dot(np.array(mean_sub_M_s),np.array(scal_M_s))
-    Td = np.dot(np.array(mean_sub_M_d),np.array(scal_M_d))
+    Ts = np.dot(np.array(scal_M_s),np.array(mean_sub_M_s))
+    Td = np.dot(np.array(scal_M_d),np.array(mean_sub_M_d))
+
+    print("Ts:{}\nTd:{}".format(Ts,Td))
 
     # computing Hn
     # A = 2N x 9 matrix
 
     for i in range(N):
-        xs,xd,ys,yd = srcP[i][0],srcP[i][1],destP[i][0],destP[i][1]
-        Ai = [-xs,-ys,-1,0,0,0,xs*xd,ys,xd,0,0,0,-xs,-ys,-1,xs*yd,ys*yd,yd]
+        xs,ys,xd,yd = srcP[i][0],srcP[i][1],destP[i][0],destP[i][1]
+        Ai = [-xs,-ys,-1,0,0,0,xs*xd,ys*xd,xd,0,0,0,-xs,-ys,-1,xs*yd,ys*yd,yd]
         Ai = np.reshape(Ai,(2,9))
         if i==0:
             A = Ai
@@ -158,8 +181,27 @@ def compute_homography(srcP, destP):
             A = np.vstack([A,Ai])
 
     print("A:{}\nN:{}\n".format(np.shape(A),N))
+
     u,s,vh = np.linalg.svd(A)
 
+    print("s:{}".format(s))
+    print("vh:{}".format(vh))
+    print("s_argmin:{}".format(np.argmin(s)))
+    h = vh[np.argmin(s)]
+    print("h_bef:{}".format(h))
+    h = h/h[8]
+    print("h_aft:{}".format(h))
+    Hn = np.reshape(h,(3,3))
+
+    print("Hn:{}".format(Hn))
+
+    # 2-2-e
+    H = np.dot(np.dot(np.linalg.inv(Td),Hn),Ts)
+    H = H / H[2][2]
+
+    # print("Ts:{}\nTd:{}".format(np.shape(Ts),np.shape(Td)))
     print("u:{}\ns:{}\nvh:{}\n".format(np.shape(u),np.shape(s),np.shape(vh)))
+
+    print("H:{}".format(H))
 
     return H
