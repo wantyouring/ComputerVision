@@ -107,7 +107,7 @@ def compute_homography(srcP, destP):
     if len(srcP) != 500: # RANSAC 일때
         N = len(srcP)
     else:
-        N = 100
+        N = 18
 
     srcP_t = np.copy(srcP)
     destP_t = np.copy(destP)
@@ -194,15 +194,15 @@ def compute_homography(srcP, destP):
     u,s,vh = np.linalg.svd(A)
 
     ### 노멀라이즈 안하고
-    for i in range(N):
-        xs,ys,xd,yd = srcP_t[i][0],srcP_t[i][1],destP_t[i][0],destP_t[i][1]
-        Ai = [-xs,-ys,-1,0,0,0,xs*xd,ys*xd,xd,0,0,0,-xs,-ys,-1,xs*yd,ys*yd,yd]
-        Ai = np.reshape(Ai,(2,9))
-        if i==0:
-            A_n = Ai
-        else:
-            A_n = np.vstack([A_n,Ai])
-    u,s,vh = np.linalg.svd(A_n)
+    # for i in range(N):
+    #     xs,ys,xd,yd = srcP_t[i][0],srcP_t[i][1],destP_t[i][0],destP_t[i][1]
+    #     Ai = [-xs,-ys,-1,0,0,0,xs*xd,ys*xd,xd,0,0,0,-xs,-ys,-1,xs*yd,ys*yd,yd]
+    #     Ai = np.reshape(Ai,(2,9))
+    #     if i==0:
+    #         A_n = Ai
+    #     else:
+    #         A_n = np.vstack([A_n,Ai])
+    # u,s,vh = np.linalg.svd(A_n)
     ###
 
     # h = np.dot(np.diag(s),vh)[np.argmin(s)]
@@ -219,18 +219,18 @@ def compute_homography(srcP, destP):
     # print("h_bef:{}".format(h))
     h = h/h[8]
     # print("h_aft:{}".format(h))
-    # Hn = np.reshape(h,(3,3))
-    H = np.reshape(h, (3, 3))
+    Hn = np.reshape(h,(3,3))
+    # H = np.reshape(h, (3, 3))
 
     # print("Hn:{}".format(Hn))
 
     # 2-2-e
-    # H = np.dot(np.dot(np.linalg.inv(Td),Hn),Ts)
+    H = np.dot(np.dot(np.linalg.inv(Td),Hn),Ts)
     H = H / H[2][2]
 
     # print("Ts:{}\nTd:{}".format(np.shape(Ts),np.shape(Td)))
     # print("u:{}\ns:{}\nvh:{}\n".format(np.shape(u),np.shape(s),np.shape(vh)))
-
+    #
     # print("H:{}".format(H))
 
     return H
@@ -240,7 +240,9 @@ def compute_homography_ransac(srcP,destP,th):
     save_H = np.zeros((3,3),dtype=float)
     max_inliers = []
 
-    for K in range(500):
+    for K in range(5000):
+        if K%100==0:
+            print("ransac iter : {}".format(K))
         random_i = []
         inlier_i_save = []
         min_dis = 99999
@@ -253,6 +255,15 @@ def compute_homography_ransac(srcP,destP,th):
 
         srcP_4 = []
         destP_4 = []
+
+        # 한 줄에 있는 4개 점 뽑는 경우 longest 거리 0나오므로 예외처리 해줘야함.
+        t_x = srcP[random_i[0]][0]
+        t_y = srcP[random_i[0]][1]
+        if t_x == srcP[random_i[1]][0] and t_x == srcP[random_i[2]][0] and t_x == srcP[random_i[3]][0]:
+            continue
+        if t_y == srcP[random_i[1]][1] and t_y == srcP[random_i[2]][1] and t_y == srcP[random_i[3]][1]:
+            continue
+
         for i in range(4):
             srcP_4.append(srcP[random_i[i]])
             destP_4.append(destP[random_i[i]])
@@ -277,13 +288,13 @@ def compute_homography_ransac(srcP,destP,th):
                 inlier_cnt += 1
                 inlier_i_save.append(i)
         # print("min_dis:{},max_dis:{}".format(min_dis,max_dis))
-        print("inlier_cnt : {}".format(inlier_cnt))
+        # print("inlier_cnt : {}".format(inlier_cnt))
         if max_inlier_cnt < inlier_cnt:
             save_H = np.copy(H)
             max_inliers = inlier_i_save.copy()
             max_inlier_cnt = inlier_cnt
-        print("max_in_cnt : {}".format(max_inlier_cnt))
-        print("max_inliers : {}".format(max_inliers))
+            print("max_in_cnt : {}".format(max_inlier_cnt))
+            print("max_inliers : {}".format(max_inliers))
 
     res_srcP = []
     res_destP = []

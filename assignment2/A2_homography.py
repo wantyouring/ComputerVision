@@ -22,14 +22,14 @@ def main():
     orb = cv2.ORB_create()
 
     # desk 그림
-    kp1 = orb.detect(gray_desk, None)
-    kp1, des1 = orb.compute(gray_desk, kp1)
+    kp2 = orb.detect(gray_desk, None)
+    kp2, des2 = orb.compute(gray_desk, kp2)
     # print("kp : {} \n des : {} \n".format(np.shape(kp1),np.shape(des1)))
 
     # cover 그림
-    kp2 = orb.detect(gray_cover, None)
-    kp2, des2 = orb.compute(gray_cover, kp2)
-    print("kp : {}\n des : {} \n".format(kp2[0].pt, np.shape(des2)))
+    kp1 = orb.detect(gray_cover, None)
+    kp1, des1 = orb.compute(gray_cover, kp1)
+    #print("kp : {}\n des : {} \n".format(kp2[0].pt, np.shape(des2)))
 
     matches = []
 
@@ -65,6 +65,12 @@ def main():
     # print("srcP:{}\n".format(np.shape(srcP)))
 
     matches = sorted(matches,key=lambda obj:obj.distance) # distance 기준 정렬
+
+    ############################ Bf matcher test
+    # bf = cv2.BFMatcher(cv2.NORM_HAMMING)
+    # matches = bf.match(des1, des2)  # kp1[i] -> kp2[matches[i]]
+    ############################
+
     for i in range(500):
         srcP.append([kp1[matches[i].queryIdx].pt[0],kp1[matches[i].queryIdx].pt[1]])
         destP.append([kp2[matches[i].trainIdx].pt[0],kp2[matches[i].trainIdx].pt[1]])
@@ -77,8 +83,7 @@ def main():
 
     # for i in range(10):
     #     print("matches{}:{}".format(i,matches[i].distance))
-    # bf = cv2.BFMatcher(cv2.NORM_HAMMING)
-    # matches = bf.match(des1,des2) # kp1[i] -> kp2[matches[i]]
+
     #
     # print("matches shape : {}, matches : {}".format(np.shape(matches),matches))
     # print("match 1 element : distance{}\n trainidx:{}\n queryidx:{}\n imgidx:{}".
@@ -90,9 +95,6 @@ def main():
     # cv2.waitKey(0)
 
     # 2-2
-    # srcPoint = np.array([[srcP[0][0], srcP[0][1]], [srcP[100][0], srcP[100][1]], [srcP[200][0], srcP[200][1]], [srcP[300][0], srcP[300][1]]], dtype=np.float32)
-    # dstPoint = np.array([[destP[0][0], destP[0][1]], [destP[100][0], destP[100][1]], [destP[200][0], destP[200][1]], [destP[300][0], destP[300][1]]], dtype=np.float32)
-
     H = compute_homography(srcP,destP)
 
     h_cover,w_cover = np.shape(gray_cover)
@@ -104,11 +106,12 @@ def main():
 
     # matrix = cv2.getPerspectiveTransform(srcPoint, dstPoint)
     # tm = np.array(M_ENLARGE_Y)
+    gray_desk_homo = np.copy(gray_desk)
     dst = cv2.warpPerspective(gray_cover,H,(w_desk,h_desk))
-    # for i in range(h_desk):
-    #     for j in range(w_desk):
-    #         if dst[i][j] != 0:
-    #             gray_desk[i][j] = dst[i][j]
+    for i in range(h_desk):
+        for j in range(w_desk):
+            if dst[i][j] != 0:
+                gray_desk_homo[i][j] = dst[i][j]
 
     # for i in range(h_cover):
     #     for j in range(w_cover):
@@ -116,11 +119,20 @@ def main():
     #         x_, y_, z_ = result_m[0][0], result_m[1][0], result_m[2][0]
     #         warp_plane[int(x_/z_)][int(y_/z_)] = gray_cover[i][j]
 
-    H_ransac = compute_homography_ransac(srcP,destP,25)
-    dst2 = cv2.warpPerspective(gray_cover, H_ransac, (w_desk, h_desk))
+    for th in range(5,40):
+        H_ransac = compute_homography_ransac(srcP,destP,th) # 20
+        gray_desk_ransac = np.copy(gray_desk)
+        dst2 = cv2.warpPerspective(gray_cover, H_ransac, (w_desk, h_desk))
+        for i in range(h_desk):
+            for j in range(w_desk):
+                if dst2[i][j] != 0:
+                    gray_desk_ransac[i][j] = dst2[i][j]
+        cv2.imwrite('{}.png'.format(th), gray_desk_ransac)
 
-    cv2.imshow("homography",dst)
-    cv2.imshow("ransac",dst2)
+
+    print("end")
+    cv2.imshow("homography",gray_desk_homo)
+    cv2.imshow("ransac",gray_desk_ransac)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
