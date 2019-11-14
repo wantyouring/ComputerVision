@@ -229,7 +229,7 @@ def compute_homography_ransac(srcP,destP,th):
     srcP = np.copy(srcP[0:N])
     destP = np.copy(destP[0:N])
 
-    for K in range(2000):
+    for K in range(1500):
         if K%100==0:
             print("ransac iter : {}".format(K))
         random_i = []

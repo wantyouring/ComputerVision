@@ -175,49 +175,20 @@ def main():
     H = compute_homography_ransac(srcP, destP,25) # 33
     #H = compute_homography(srcP, destP) # homography test. 잘 나옴.
     h_desk, w_desk = np.shape(img1)
-    img1_ransac = np.copy(img1)
-    dst = cv2.warpPerspective(img2, H, (w_desk+400, h_desk)) # 380
+    # 이미지 블렌딩 없이 합치기
+    dst = cv2.warpPerspective(img2, H, (w_desk+400, h_desk)) # 출력할 이미지
     dst[0:h_desk,0:w_desk] = np.copy(img1)
 
-    # alpha = 1
-    # for i in range(1024-100,1024):
-    #     alpha -= 0.01
-    #     for j in range(0,h_desk):
-    #         dst[j][i] = dst[j][i]*alpha + img1[j][i]*(1-alpha)
-    #
-    # alpha_1 = [1]*1424
-    # al = 1
-    # for i in range(1024-100,1424):
-    #     al -= 0.01
-    #     if al >=0:
-    #         alpha_1[i] = al
-    #     else:
-    #         alpha_1[i] = 0
-    # alpha_2 = [0]*1424
-    # al = 0
-    # for i in range(1024-100,1424):
-    #     al += 0.01
-    #     if al <= 1:
-    #         alpha_2[i] = al
-    #     else:
-    #         alpha_2[i] = 1
-    #
-    # dst2 = np.zeros((h_desk,w_desk+400),dtype=float)
-    # for i in range(1424):
-    #     for j in range(h_desk):
-    #         if i<1024:
-    #             dst2[j][i] = alpha_1[i]*img1[j][i] + alpha_2[i]*dst[j][i]
-    #         else:
-    #             dst2[j][i] = alpha_2[i] * dst[j][i]
+    # blending1 : 왼쪽 이미지, blending2 : 오른쪽 이미지
+    blending2 = cv2.warpPerspective(img2, H, (w_desk + 400, h_desk))
+    blending1 = np.zeros((h_desk,w_desk + 400),dtype=float)
+    blending1[0:h_desk,0:w_desk] = np.copy(img1)
 
-
-    #dst[w_desk-50:w_desk+50] =
-
-    # for i in range(h_desk*2):
-    #     for j in range(w_desk*2):
-    #         if dst[i][j] != 0:
-    #             img1_ransac[i][j] = dst[i][j]
-
+    for i in range(0,h_desk):
+        alpha = 1
+        for j in range(1024-100,1024):
+            alpha -= 0.01
+            dst[i][j] = alpha * blending1[i][j] + (1-alpha) * blending2[i][j]
 
     ############################# print #############################
     print("end")
