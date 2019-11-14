@@ -107,7 +107,7 @@ def compute_homography(srcP, destP):
     if len(srcP) != 500: # RANSAC 일때
         N = len(srcP)
     else:
-        N = 17 # 18 # homograph 계산시 17개까지 사용. 13개 이상.
+        N = 17 # 17 # homograph 계산시 17개까지 사용. 13개 이상.
 
     # srcP_t = np.copy(srcP)
     # destP_t = np.copy(destP)
@@ -224,15 +224,19 @@ def compute_homography(srcP, destP):
 def compute_homography_ransac(srcP,destP,th):
     max_inlier_cnt = 0
     max_inliers = []
+    N = 90 # 상위 N개 추출
 
-    for K in range(400):
+    srcP = np.copy(srcP[0:N])
+    destP = np.copy(destP[0:N])
+
+    for K in range(2000):
         if K%100==0:
             print("ransac iter : {}".format(K))
         random_i = []
         inlier_i_save = []
         # 서로다른 4개 랜덤수 추출
         while len(random_i) <= 4:
-            t = np.random.randint(500) # 500개 전부 받지 않고 상위 몇 개에서 4개 고르기로 바꾸기.
+            t = np.random.randint(N) # 500개 전부 받지 않고 상위 N 개에서 4개 고르기로 바꾸기.
             if t not in random_i:
                 random_i.append(t)
 
@@ -257,7 +261,7 @@ def compute_homography_ransac(srcP,destP,th):
         H = compute_homography(srcP_4,destP_4)
 
         inlier_cnt = 0
-        for i in range(500):
+        for i in range(N):
             res = np.dot(H,np.reshape([srcP[i][0],srcP[i][1],1],(3,1)))
             res = res/res[2][0]
             res_x = res[0][0]

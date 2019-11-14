@@ -80,12 +80,12 @@ def main():
         match_obj = cv2.DMatch(_queryIdx=i,_trainIdx=min_index,_distance=min_ham_dis)
         matches.append(match_obj)
 
-    matches = sorted(matches,key=lambda obj:obj.distance) # distance 기준 정렬
-
     ############################ Bf matcher test
     # bf = cv2.BFMatcher(cv2.NORM_HAMMING)
     # matches = bf.match(des1, des2)  # kp1[i] -> kp2[matches[i]]
     ############################
+
+    matches = sorted(matches,key=lambda obj:obj.distance) # distance 기준 정렬
 
     # srcP에 distance 낮은 순서로 정렬된 상태로 넣기
     srcP = []
@@ -124,7 +124,7 @@ def main():
     #                 gray_desk_ransac[i][j] = dst2[i][j]
     #     cv2.imwrite('{}.png'.format(th), gray_desk_ransac)
 
-    H_ransac = compute_homography_ransac(srcP, destP, 13)  # 현재 14가 제일 잘나옴. 20
+    H_ransac = compute_homography_ransac(srcP, destP, 26)  # 현재 14가 제일 잘나옴. 20
     gray_desk_ransac = np.copy(gray_desk)
     dst2 = cv2.warpPerspective(gray_cover, H_ransac, (w_desk, h_desk))
     for i in range(h_desk):
@@ -178,6 +178,7 @@ def main():
     img1_ransac = np.copy(img1)
     dst = cv2.warpPerspective(img2, H, (w_desk+400, h_desk)) # 380
     dst[0:h_desk,0:w_desk] = np.copy(img1)
+
     # alpha = 1
     # for i in range(1024-100,1024):
     #     alpha -= 0.01
