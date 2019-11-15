@@ -129,7 +129,7 @@ def main():
     # max_inliers: [0, 1, 2, 5, 6, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 24]
 
     #ransac threshold 찾기 위한 코드
-    # for th in range(1,20):
+    # for th in range(1,40):
     #     H_ransac = compute_homography_ransac(srcP,destP,7.617144125) #
     #     gray_desk_ransac = np.copy(gray_desk)
     #     dst2 = cv2.warpPerspective(gray_cover, H_ransac, (w_desk, h_desk))
@@ -162,6 +162,19 @@ def main():
         for j in range(w_desk):
             if dst2[i][j] != 0:
                 gray_desk_ransac[i][j] = dst2[i][j]
+
+
+    # 해리포터 cover 
+    hp_cover = cv2.imread('hp_cover.jpg', cv2.IMREAD_GRAYSCALE)
+    h,w = np.shape(gray_cover)
+    hp_cover2 = cv2.resize(hp_cover,(w,h))
+    hp_desk_ransac = np.copy(gray_desk)
+    hp_cover_desk = cv2.warpPerspective(hp_cover2, H_ransac, (w_desk, h_desk))
+    for i in range(h_desk):
+        for j in range(w_desk):
+            if hp_cover_desk[i][j] != 0:
+                hp_desk_ransac[i][j] = hp_cover_desk[i][j]
+
 
     ############################# 2-5 #############################
     img1 = cv2.imread('diamondhead-10.PNG', cv2.IMREAD_GRAYSCALE)
@@ -223,8 +236,11 @@ def main():
 
     ############################# print #############################
     print("end")
+    cv2.namedWindow("hp")  # Create a named window
+    cv2.moveWindow("hp", 100, 10)
+    cv2.imshow("hp", hp_desk_ransac)
     cv2.namedWindow("homography")  # Create a named window
-    cv2.moveWindow("homography", 40, 30)  # Move it to (40,30)
+    cv2.moveWindow("homography", 150, 30)
     cv2.imshow("homography",gray_desk_homo)
     cv2.namedWindow("ransac")  # Create a named window
     cv2.moveWindow("ransac", 700, 30)

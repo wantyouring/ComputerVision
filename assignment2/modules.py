@@ -285,6 +285,8 @@ def compute_homography_ransac(srcP,destP,th):
         if max_inlier_cnt < inlier_cnt:
             max_inliers = inlier_i_save.copy()
             max_inlier_cnt = inlier_cnt
+            if max_inliers != [0, 1, 2, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 24]:
+                print("found error")
             print("max_dis:{}".format(max_dis))
             print("max_in_cnt : {}".format(max_inlier_cnt))
             print("max_inliers : {}".format(max_inliers))
