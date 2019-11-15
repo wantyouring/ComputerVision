@@ -112,6 +112,7 @@ def main():
     h_desk,w_desk = np.shape(gray_desk)
     gray_desk_homo = np.copy(gray_desk)
     dst = cv2.warpPerspective(gray_cover,H,(w_desk,h_desk))
+    cv2.imshow("homography only", dst)
     for i in range(h_desk):
         for j in range(w_desk):
             if dst[i][j] != 0:
@@ -158,18 +159,20 @@ def main():
     H_ransac = compute_homography_ransac(srcP, destP, 7.617144125)  # 26 7373 7378 7381 7389 7.617144125
     gray_desk_ransac = np.copy(gray_desk)
     dst2 = cv2.warpPerspective(gray_cover, H_ransac, (w_desk, h_desk))
+    cv2.imshow("ransac only",dst2)
     for i in range(h_desk):
         for j in range(w_desk):
             if dst2[i][j] != 0:
                 gray_desk_ransac[i][j] = dst2[i][j]
 
 
-    # 해리포터 cover 
+    # 해리포터 cover
     hp_cover = cv2.imread('hp_cover.jpg', cv2.IMREAD_GRAYSCALE)
     h,w = np.shape(gray_cover)
     hp_cover2 = cv2.resize(hp_cover,(w,h))
     hp_desk_ransac = np.copy(gray_desk)
     hp_cover_desk = cv2.warpPerspective(hp_cover2, H_ransac, (w_desk, h_desk))
+    cv2.imshow("hp only",hp_cover_desk)
     for i in range(h_desk):
         for j in range(w_desk):
             if hp_cover_desk[i][j] != 0:
@@ -222,6 +225,7 @@ def main():
     # 이미지 블렌딩 없이 합치기
     dst = cv2.warpPerspective(img2, H, (w_desk+400, h_desk)) # 출력할 이미지
     dst[0:h_desk,0:w_desk] = np.copy(img1)
+    cv2.imshow("no blending", dst)
 
     # blending1 : 왼쪽 이미지, blending2 : 오른쪽 이미지
     blending2 = cv2.warpPerspective(img2, H, (w_desk + 400, h_desk))
