@@ -91,7 +91,7 @@ def main():
     srcP = []
     destP = []
 
-    print("matches size : {}".format(len(matches)))
+    # print("matches size : {}".format(len(matches)))
 
     for i in range(500):
         srcP.append([kp1[matches[i].queryIdx].pt[0],kp1[matches[i].queryIdx].pt[1]])
@@ -99,8 +99,8 @@ def main():
     srcP = np.array(srcP)  # shape of srcP : (N,2) (N = 500)
     destP = np.array(destP)
 
-    for i in range(30):
-        print("matches dis:{}".format(matches[i].distance))
+    # for i in range(30):
+    #     print("matches dis:{}".format(matches[i].distance))
 
     # print("srcP shape:{}".format(np.shape(srcP)))
 
