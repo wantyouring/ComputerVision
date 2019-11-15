@@ -81,7 +81,7 @@ def main():
         matches.append(match_obj)
 
     ############################ Bf matcher test
-    # bf = cv2.BFMatcher(cv2.NORM_HAMMING)
+    # bf = cv2.BFMatcher(cv2.NORM_HAMMING,crossCheck=True)
     # matches = bf.match(des1, des2)  # kp1[i] -> kp2[matches[i]]
     ############################
 
@@ -91,11 +91,16 @@ def main():
     srcP = []
     destP = []
 
+    print("matches size : {}".format(len(matches)))
+
     for i in range(500):
         srcP.append([kp1[matches[i].queryIdx].pt[0],kp1[matches[i].queryIdx].pt[1]])
         destP.append([kp2[matches[i].trainIdx].pt[0],kp2[matches[i].trainIdx].pt[1]])
     srcP = np.array(srcP)  # shape of srcP : (N,2) (N = 500)
     destP = np.array(destP)
+
+    for i in range(30):
+        print("matches dis:{}".format(matches[i].distance))
 
     # print("srcP shape:{}".format(np.shape(srcP)))
 
@@ -113,9 +118,19 @@ def main():
                 gray_desk_homo[i][j] = dst[i][j]
 
     ############################# 2-3, 2-4 #############################
-    # ransac threshold 찾기 위한 코드
-    # for th in range(5,40):
-    #     H_ransac = compute_homography_ransac(srcP,destP,th) # 20
+    srcP = np.copy(srcP[20:]) # huristic
+    destP = np.copy(destP[20:])
+# [0, 1, 2, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 24] 6.94303890995347
+# [0, 1, 2, 5, 6, 7, 10, 11, 12, 13, 15, 17, 18, 19, 20, 21, 22, 24] 7.706421086794899
+# [0, 1, 2, 3, 5, 6, 7, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 24] 7.3504919606982
+
+    # max_dis: 7.510316821935321
+    # max_in_cnt: 19
+    # max_inliers: [0, 1, 2, 5, 6, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 24]
+
+    #ransac threshold 찾기 위한 코드
+    # for th in range(1,20):
+    #     H_ransac = compute_homography_ransac(srcP,destP,7.617144125) #
     #     gray_desk_ransac = np.copy(gray_desk)
     #     dst2 = cv2.warpPerspective(gray_cover, H_ransac, (w_desk, h_desk))
     #     for i in range(h_desk):
@@ -124,7 +139,23 @@ def main():
     #                 gray_desk_ransac[i][j] = dst2[i][j]
     #     cv2.imwrite('{}.png'.format(th), gray_desk_ransac)
 
-    H_ransac = compute_homography_ransac(srcP, destP, 26)  # 현재 14가 제일 잘나옴. 20
+    # 잘나오는 inliers 조합
+    # N = 70
+    # max_in_cnt: 31
+    # max_inliers: [17, 20, 21, 22, 25, 26, 31, 32, 33, 34, 35, 37, 38, 39, 40, 41, 42, 44, 46, 47, 50, 53, 54, 57, 58,
+    #               59, 60, 61, 65, 66, 68]
+
+    # N = 70
+    # max_in_cnt: 37
+    # max_inliers: [17, 20, 21, 22, 23, 25, 26, 27, 29, 30, 31, 32, 33, 34, 35, 37, 38, 39, 40, 41, 42, 44, 46, 47, 50,
+    #               53, 54, 55, 57, 58, 59, 60, 61, 62, 65, 66, 68]
+
+    #N = 70
+    # max_in_cnt: 34
+    # max_inliers: [17, 20, 21, 22, 25, 26, 27, 30, 31, 32, 33, 34, 35, 37, 38, 39, 40, 41, 42, 44, 46, 47, 50, 53, 54,
+    #               55, 57, 58, 59, 60, 61, 65, 66, 68]
+
+    H_ransac = compute_homography_ransac(srcP, destP, 7.617144125)  # 26 7373 7378 7381 7389 7.617144125
     gray_desk_ransac = np.copy(gray_desk)
     dst2 = cv2.warpPerspective(gray_cover, H_ransac, (w_desk, h_desk))
     for i in range(h_desk):

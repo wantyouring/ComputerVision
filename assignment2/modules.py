@@ -224,12 +224,16 @@ def compute_homography(srcP, destP):
 def compute_homography_ransac(srcP,destP,th):
     max_inlier_cnt = 0
     max_inliers = []
-    N = 90 # 상위 N개 추출
+    N = 26 # 상위 N개 추출 90 60 70
 
     srcP = np.copy(srcP[0:N])
     destP = np.copy(destP[0:N])
 
-    for K in range(1500):
+    start = time.time()
+
+    K = 0
+    while time.time() - start < 3:
+        K+=1
         if K%100==0:
             print("ransac iter : {}".format(K))
         random_i = []
@@ -261,20 +265,27 @@ def compute_homography_ransac(srcP,destP,th):
         H = compute_homography(srcP_4,destP_4)
 
         inlier_cnt = 0
+        dises = []
         for i in range(N):
             res = np.dot(H,np.reshape([srcP[i][0],srcP[i][1],1],(3,1)))
+            if res[2][0] == 0:
+                res[2][0] += 1e-14
             res = res/res[2][0]
             res_x = res[0][0]
             res_y = res[1][0]
             dis = sqrt((destP[i][0] - res_x)**2 + (destP[i][1] - res_y)**2)
+
             if dis < th:
+                dises.append(dis)
                 inlier_cnt += 1
                 inlier_i_save.append(i)
+                max_dis = max(dises)
         # print("min_dis:{},max_dis:{}".format(min_dis,max_dis))
         # print("inlier_cnt : {}".format(inlier_cnt))
         if max_inlier_cnt < inlier_cnt:
             max_inliers = inlier_i_save.copy()
             max_inlier_cnt = inlier_cnt
+            print("max_dis:{}".format(max_dis))
             print("max_in_cnt : {}".format(max_inlier_cnt))
             print("max_inliers : {}".format(max_inliers))
 
