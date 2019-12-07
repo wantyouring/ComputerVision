@@ -1,4 +1,5 @@
 import numpy as np
+import cv2
 from compute_avg_reproj_error import *
 
 '''
@@ -80,6 +81,7 @@ def compute_F_norm(M):
     return F
 
 def compute_F_mine(M):
+    # normalize를 다른 방식으로 해보자.
     _M = M.copy()
     A = []
     # img 가로, 세로 1000으로 가정.(이후 M에서 최소, 최대값으로 바꾸기)
@@ -134,6 +136,58 @@ F = compute_F_norm(M)
 print(compute_avg_reproj_error(M,F))
 # print(F)
 
-F = compute_F_mine(M)
-print(compute_avg_reproj_error(M,F))
+# F = compute_F_mine(M)
+# print(compute_avg_reproj_error(M,F))
 # print(F)
+
+# 1-2.
+'''
+for 3회
+    (왼쪽 한 점 - 오른쪽 한 점)쌍 구하기
+    왼쪽 한 점에 매칭되는 오른쪽의 epipolar line을 구해 표시.
+    오른쪽 한 점에 매칭되는 왼쪽의 epipolar line을 구해 표시.'
+'''
+
+colors = [(255,0,0),(0,255,0),(0,0,255)]
+
+while True:
+    point3 = np.random.choice(len(M),3,replace=False)
+    # print(point3)
+
+    temple1 = cv2.imread('temple1.PNG', cv2.IMREAD_COLOR)
+    temple2 = cv2.imread('temple2.PNG', cv2.IMREAD_COLOR)
+    # temple1.astype(float)
+
+    h1, w1, _ = np.shape(temple1)
+    h2, w2, _ = np.shape(temple2)
+    # print([h1,w1,h2,w2])
+
+    for point, color in zip(point3,colors):
+        # np.random.randint()
+        sx = M[point][0]
+        sy = M[point][1]
+        dx = M[point][2]
+        dy = M[point][3]
+
+        n1_np = np.dot(F,np.transpose(np.array([sx,sy,1])))
+        a = n1_np[0]
+        b = n1_np[1]
+        c = n1_np[2]
+
+        n2_np = np.dot(np.array([dx,dy,1]),F)
+        a_ = n2_np[0]
+        b_ = n2_np[1]
+        c_ = n2_np[2]
+
+        # a*x+by+c=0 -> x=0때 좌표, x=w일 때 좌표 line
+        # y = -(a/b)x-(c/b)
+        cv2.circle(temple1,(int(sx),int(sy)),5,color,2)
+        cv2.circle(temple2,(int(dx),int(dy)),5,color,2)
+        cv2.line(temple1,(0,-int(c/b)),(w1,int(-(a/b)*w1-(c/b))),color,2)
+        cv2.line(temple2,(0,-int(c_/b_)),(w2,int(-(a_/b_)*w2-(c_/b_))),color,2)
+
+    temple_bind = np.hstack((temple1,temple2))
+    cv2.imshow("3point",temple_bind)
+    pressed_key = cv2.waitKey(0)
+    if pressed_key == ord('q'):
+        cv2.destroyAllWindows()
