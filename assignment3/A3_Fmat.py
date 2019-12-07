@@ -150,6 +150,8 @@ for 3회
 
 colors = [(255,0,0),(0,255,0),(0,0,255)]
 
+
+# @@@@그림 3개에 대해서 모두 실행하게끔 바꾸기.
 while True:
     point3 = np.random.choice(len(M),3,replace=False)
     # print(point3)
@@ -191,3 +193,4 @@ while True:
     pressed_key = cv2.waitKey(0)
     if pressed_key == ord('q'):
         cv2.destroyAllWindows()
+        break
