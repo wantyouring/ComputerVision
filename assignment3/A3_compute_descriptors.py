@@ -32,14 +32,26 @@ eval.exe
 sift features 
 '''
 
-sift = []
+sifts = []
 
-with open("./sift/sift100000", "rb") as f:
-    bytes = f.read()
-    sift = np.frombuffer(np.array(bytes),dtype=np.uint8)
+# sift들 불러오기.
+for i in range(100000,101000):
+    with open("./sift/sift{}".format(i), "rb") as f:
+        sift = []
+        bytes = f.read()
+        sift = np.frombuffer(np.array(bytes),dtype=np.uint8)
+        np_sift = np.asarray(sift)
+        np_sift = np.reshape(np_sift, (int(len(sift) / 128), 128))
+        sifts.append(np_sift)
 
-print(np.shape(sift))
+print(np.shape(sifts))
 
-np_sift = np.asarray(sift)
-np_sift = np.reshape(np_sift,(int(len(sift)/128),128))
-print(np.shape(np_sift))
+# sift 거리 비교하기.
+
+# feature matching을 해서 일정 threshold이하로 매칭되는게 많은 이미지 판별.
+print(sifts[0])
+print(sifts[1])
+
+print(np.array(sifts[1]) - np.array(sifts[0]))
+# print(sifts[1] - sifts[0])
+
