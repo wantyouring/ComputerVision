@@ -52,6 +52,14 @@ print(np.shape(sifts))
 print(sifts[0])
 print(sifts[1])
 
-print(np.array(sifts[1]) - np.array(sifts[0]))
+# print(np.array(sifts[1]) - np.array(sifts[0]))
 # print(sifts[1] - sifts[0])
 
+N = np.array([1000])
+D = np.array(512)
+d = np.zeros((1000,512),dtype=np.float32)
+
+with open("./A3_2014312993.des", "wb") as f:
+    f.write(N.tobytes())
+    f.write(D.tobytes())
+    f.write(d.tobytes())
