@@ -22,11 +22,11 @@ compute_F_mine()함수 작성하기. 방법 체크.
 file_name = 'library'
 ext = 'jpg'
 
-M = np.loadtxt('{}_matches.txt'.format(file_name))
+files = ['temple','library','house']
+exts = ['png','jpg','jpg']
+Fs = []
 
-# print(M)
 global h1,w1,h2,w2
-
 
 def compute_F_raw(M):
     A = []
@@ -44,14 +44,20 @@ def compute_F_raw(M):
 def compute_F_norm(M):
     global h1,w1
     _M = M.copy()
-    half_img = max([h1,w1])/2 # 그림 shape받아 절반 size 저장.
+    half_img_h = h1/2 # 그림 shape받아 절반 size 저장.
+    half_img_w = w1/2
+
     A = []
     for i in range(len(_M)):
-        for j in range(4):
-            _M[i][j] -= half_img
+        _M[i][0] -= half_img_w
+        _M[i][1] -= half_img_h
+        _M[i][2] -= half_img_w
+        _M[i][3] -= half_img_h
     for i in range(len(_M)):
-        for j in range(4):
-            _M[i][j] /= half_img
+        _M[i][0] /= half_img_w
+        _M[i][1] /= half_img_h
+        _M[i][2] /= half_img_w
+        _M[i][3] /= half_img_h
     cnt = 0
     for x1, y1, x2, y2 in _M:
         cnt += 1
@@ -62,11 +68,11 @@ def compute_F_norm(M):
     F = np.reshape(vh[8], (3, 3))
 
     # normalize 행렬 T 구하기.
-    sub_M_s = [[1, 0, -half_img],
-               [0, 1, -half_img],
+    sub_M_s = [[1, 0, -half_img_w],
+               [0, 1, -half_img_h],
                [0, 0, 1]]
-    scal_M_s = [[1/half_img, 0, 0],
-                [0, 1/half_img, 0],
+    scal_M_s = [[1/half_img_w, 0, 0],
+                [0, 1/half_img_h, 0],
                 [0, 0, 1]]
 
     T = np.dot(np.array(scal_M_s), np.array(sub_M_s))
@@ -94,10 +100,6 @@ def compute_F_mine(M):
         _M[i][1] /= s_y_max / 2
         _M[i][2] /= d_x_max / 2
         _M[i][3] /= d_y_max / 2
-    # M[0:len(M)][0] -= s_x_max/2
-    # M[0:len(M)][1] -= s_y_max/2
-    # M[0:len(M)][2] -= d_x_max/2
-    # M[0:len(M)][3] -= d_y_max/2
 
     # normalize 행렬
     sub_M_s = [[1, 0, -s_x_max / 2],
@@ -124,21 +126,30 @@ def compute_F_mine(M):
 
     return F
 
-img = cv2.imread('{}1.{}'.format(file_name,ext), cv2.IMREAD_COLOR)
-# temple1.astype(float)
-h1, w1, _ = np.shape(img)
+for i in range(3):
+    file_name = files[i]
+    ext = exts[i]
 
-F = compute_F_raw(M)
-print(compute_avg_reproj_error(M,F))
-# print(F)
+    M = np.loadtxt('{}_matches.txt'.format(file_name))
 
-F = compute_F_norm(M)
-print(compute_avg_reproj_error(M,F))
-# print(F)
+    img = cv2.imread('{}1.{}'.format(file_name,ext), cv2.IMREAD_COLOR)
+    # temple1.astype(float)
+    h1, w1, _ = np.shape(img)
 
-# F = compute_F_mine(M)
-# print(compute_avg_reproj_error(M,F))
-# print(F)
+    F = compute_F_raw(M)
+    print("Raw = {}".format(compute_avg_reproj_error(M,F)))
+    # print(F)
+
+    F = compute_F_norm(M)
+    print("Norm = {}".format(compute_avg_reproj_error(M,F)))
+    # print(F)
+
+    # F = cv2.findFundamentalMat(M[:, 0:2], M[:, 2:4])[0]  # 내장함수 테스트
+    Fs.append(F)
+
+    # F = compute_F_mine(M)
+    # print(compute_avg_reproj_error(M,F))
+    # print(F)
 
 # 1-2.
 '''
@@ -150,44 +161,51 @@ for 3회
 
 colors = [(255,0,0),(0,255,0),(0,0,255)]
 
-while True:
-    point3 = np.random.choice(len(M),3,replace=False)
-    # print(point3)
+for i in range(3):
+    file_name = files[i]
+    ext = exts[i]
+    F = Fs[i]
 
-    img1 = cv2.imread('{}1.{}'.format(file_name,ext), cv2.IMREAD_COLOR)
-    img2 = cv2.imread('{}2.{}'.format(file_name,ext), cv2.IMREAD_COLOR)
-    # temple1.astype(float)
-    h1, w1, _ = np.shape(img1)
-    h2, w2, _ = np.shape(img2)
-    # print([h1,w1,h2,w2])
+    M = np.loadtxt('{}_matches.txt'.format(file_name))
 
-    for point, color in zip(point3,colors):
-        # np.random.randint()
-        sx = M[point][0]
-        sy = M[point][1]
-        dx = M[point][2]
-        dy = M[point][3]
+    while True:
+        point3 = np.random.choice(len(M),3,replace=False)
+        # print(point3)
 
-        n1_np = np.dot(F,np.transpose(np.array([sx,sy,1])))
-        a = n1_np[0]
-        b = n1_np[1]
-        c = n1_np[2]
+        img1 = cv2.imread('{}1.{}'.format(file_name,ext), cv2.IMREAD_COLOR)
+        img2 = cv2.imread('{}2.{}'.format(file_name,ext), cv2.IMREAD_COLOR)
+        # temple1.astype(float)
+        h1, w1, _ = np.shape(img1)
+        h2, w2, _ = np.shape(img2)
+        # print([h1,w1,h2,w2])
 
-        n2_np = np.dot(np.array([dx,dy,1]),F)
-        a_ = n2_np[0]
-        b_ = n2_np[1]
-        c_ = n2_np[2]
+        for point, color in zip(point3,colors):
+            # np.random.randint()
+            sx = M[point][0]
+            sy = M[point][1]
+            dx = M[point][2]
+            dy = M[point][3]
 
-        # a*x+by+c=0 -> x=0때 좌표, x=w일 때 좌표 line
-        # y = -(a/b)x-(c/b)
-        cv2.circle(img1,(int(sx),int(sy)),5,color,2)
-        cv2.circle(img2,(int(dx),int(dy)),5,color,2)
-        cv2.line(img1,(0,-int(c/b)),(w1,int(-(a/b)*w1-(c/b))),color,2)
-        cv2.line(img2,(0,-int(c_/b_)),(w2,int(-(a_/b_)*w2-(c_/b_))),color,2)
+            n1_np = np.dot(F,np.transpose(np.array([sx,sy,1])))
+            a = n1_np[0]
+            b = n1_np[1]
+            c = n1_np[2]
 
-    img_bind = np.hstack((img1,img2))
-    cv2.imshow("3point",img_bind)
-    pressed_key = cv2.waitKey(0)
-    if pressed_key == ord('q'):
-        cv2.destroyAllWindows()
-        break
+            n2_np = np.dot(np.transpose(F),np.transpose(np.array([dx,dy,1])))
+            a_ = n2_np[0]
+            b_ = n2_np[1]
+            c_ = n2_np[2]
+
+            # a*x+by+c=0 -> x=0때 좌표, x=w일 때 좌표 line
+            # y = -(a/b)x-(c/b)
+            cv2.circle(img1,(int(sx),int(sy)),5,color,2)
+            cv2.circle(img2,(int(dx),int(dy)),5,color,2)
+            cv2.line(img2,(0,-int(c/b)),(w1,int(-(a/b)*w1-(c/b))),color,2)
+            cv2.line(img1,(0,-int(c_/b_)),(w2,int(-(a_/b_)*w2-(c_/b_))),color,2)
+
+        img_bind = np.hstack((img1,img2))
+        cv2.imshow("3point",img_bind)
+        pressed_key = cv2.waitKey(0)
+        if pressed_key == ord('q'):
+            cv2.destroyAllWindows()
+            break
