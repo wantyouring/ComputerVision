@@ -35,14 +35,10 @@ sift features
 sift = []
 
 with open("./sift/sift100000", "rb") as f:
-    byte = f.read(1)
-    cnt = 0
-    while byte:
-        # print(int.from_bytes(byte,"big"))
-        sift.append(int.from_bytes(byte, "big"))
-        byte = f.read(1)
-        cnt += 1
-print(cnt)
+    bytes = f.read()
+    sift = np.frombuffer(np.array(bytes),dtype=np.uint8)
+
+print(np.shape(sift))
 
 np_sift = np.asarray(sift)
 np_sift = np.reshape(np_sift,(int(len(sift)/128),128))
