@@ -62,15 +62,16 @@ print(np.shape(sifts))
 
 centers = np.zeros((D,128),dtype=np.float32) # 중심 좌표들 저장. (D,128)
 
-for i in range(1000):
-    centers[i,:] = sifts[i][0,:].copy()
+for i in range(D):
+    centers[i,:] = np.sum(sifts[i][:,:]/128,axis=0).copy()
 
 # 중심 임의로 D개.(각 이미지들 처음 feature로 하기)
 # centers[:,:] = features[0:D,:].copy()
 clusters = [] # (1000,x)
 
 # k means 학습
-for i in range(20): # 학습 횟수
+Learn = 20
+for i in range(Learn): # 학습 횟수
     for j in range(N):
         cluster = np.zeros(len(sifts[j]),dtype=int)
         print(j)
@@ -79,7 +80,7 @@ for i in range(20): # 학습 횟수
             dis = np.linalg.norm(dis_center,axis=1)
             mins = np.argmin(dis) # D까지 중 최소 index
             cluster[k] = mins
-            if i==5: # 마지막에 d계산.
+            if i==Learn-1: # 마지막에 d계산.
                 d[j][mins] += 1
         clusters.append(cluster)
 
