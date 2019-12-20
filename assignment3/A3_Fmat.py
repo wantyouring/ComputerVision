@@ -19,9 +19,6 @@ compute_F_mine()함수 작성하기. 방법 체크.
 1-2-a : rgb로 epipole line 다 그리기.아무 키 누르면 다른 샘플 보여주고 q누르면 꺼지게. 그림은 opencv.
 '''
 
-file_name = 'library'
-ext = 'jpg'
-
 files = ['temple','library','house']
 exts = ['png','jpg','jpg']
 Fs = []
@@ -82,49 +79,57 @@ def compute_F_norm(M):
     return F
 
 def compute_F_mine(M):
-    # normalize를 다른 방식으로 해보자.
+    global h1, w1
     _M = M.copy()
+    half_img_h = h1 / 2  # 그림 shape받아 절반 size 저장.
+    half_img_w = w1 / 2
+
     A = []
-    # img 가로, 세로 1000으로 가정.(이후 M에서 최소, 최대값으로 바꾸기)
-    # 1. M에서 img 가로,세로만큼 빼고
-    # 2. 가로,세로만큼 나누기.
-    s_x_max, s_y_max, d_x_max, d_y_max = np.max(_M,axis=0)
-
     for i in range(len(_M)):
-        _M[i][0] -= s_x_max/2
-        _M[i][1] -= s_y_max/2
-        _M[i][2] -= d_x_max/2
-        _M[i][3] -= d_y_max/2
-    for i in range(len(M)):
-        _M[i][0] /= s_x_max / 2
-        _M[i][1] /= s_y_max / 2
-        _M[i][2] /= d_x_max / 2
-        _M[i][3] /= d_y_max / 2
+        _M[i][0] -= half_img_w
+        _M[i][1] -= half_img_h
+        _M[i][2] -= half_img_w
+        _M[i][3] -= half_img_h
+    for i in range(len(_M)):
+        _M[i][0] /= half_img_w
+        _M[i][1] /= half_img_h
+        _M[i][2] /= half_img_w
+        _M[i][3] /= half_img_h
 
-    # normalize 행렬
-    sub_M_s = [[1, 0, -s_x_max / 2],
-               [0, 1, -s_y_max / 2],
-               [0, 0, 1]]
-    scal_M_s = [[2 / s_x_max, 0, 0],
-                [0, 2 / s_y_max, 0],
-                [0, 0, 1]]
-    sub_M_d = [[1, 0, -d_x_max / 2],
-               [0, 1, -d_y_max / 2],
-               [0, 0, 1]]
-    scal_M_d = [[2 / d_x_max, 0, 0],
-                [0, 2 / d_y_max, 0],
-                [0, 0, 1]]
+    min = 100  # ransan용
+    np.random.seed(23) # 23
+    for k in range(200):
+        random_i = []
+        # 서로다른 랜덤수 추출
+        while len(random_i) <= 7:
+            t = np.random.randint(np.shape(_M)[0])
+            if t not in random_i:
+                random_i.append(t)
+        for ele in random_i:
+            x1, y1, x2, y2 = _M[ele]
+        # for x1, y1, x2, y2 in _M[0:50]:
+            A.append([x1 * x2, x1 * y2, x1, y1 * x2, y1 * y2, y1, x2, y2, 1])
+        u, s, vh = np.linalg.svd(A)
+        F = np.reshape(vh[8], (3, 3))
 
-    Ts = np.dot(np.array(scal_M_s), np.array(sub_M_s))
-    Td = np.dot(np.array(scal_M_d), np.array(sub_M_d))
+        # normalize 행렬 T 구하기.
+        sub_M_s = [[1, 0, -half_img_w],
+                   [0, 1, -half_img_h],
+                   [0, 0, 1]]
+        scal_M_s = [[1 / half_img_w, 0, 0],
+                    [0, 1 / half_img_h, 0],
+                    [0, 0, 1]]
 
-    for x1, y1, x2, y2 in _M:
-        A.append([x1 * x2, x1 * y2, x1, y1 * x2, y1 * y2, y1, x2, y2, 1])
-    u, s, vh = np.linalg.svd(A)
-    F = np.reshape(vh[8], (3, 3))
-    # F = np.dot(np.dot(np.linalg.inv(Td), F), Ts)
+        T = np.dot(np.array(scal_M_s), np.array(sub_M_s))
+        # denormalize.
+        F = np.dot(np.dot(np.transpose(T), F), T)
 
-    return F
+        score = compute_avg_reproj_error(M, F)
+        if min > score:
+            min = score
+            Fsave = F.copy()
+
+    return Fsave
 
 for i in range(3):
     file_name = files[i]
@@ -144,12 +149,12 @@ for i in range(3):
     print("Norm = {}".format(compute_avg_reproj_error(M,F)))
     # print(F)
 
-    # F = cv2.findFundamentalMat(M[:, 0:2], M[:, 2:4])[0]  # 내장함수 테스트
+    F = compute_F_mine(M)
+    score = compute_avg_reproj_error(M, F)
+    print("mine = {}".format(score))
     Fs.append(F)
 
-    # F = compute_F_mine(M)
-    # print(compute_avg_reproj_error(M,F))
-    # print(F)
+    # F = cv2.findFundamentalMat(M[:, 0:2], M[:, 2:4])[0]  # 내장함수 테스트
 
 # 1-2.
 '''
