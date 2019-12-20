@@ -62,16 +62,42 @@ print(np.shape(sifts))
 
 centers = np.zeros((D,128),dtype=np.float32) # 중심 좌표들 저장. (D,128)
 
+# 1줄 평균
 for i in range(D):
-    centers[i,:] = np.sum(sifts[i][:,:]/128,axis=0).copy()
+    centers[i,:] = np.sum(sifts[i][:,:]/128,axis=0).copy() # 2.67
+
+# # 1줄 + 4개 평균
+# for i in range(D):
+#     if i%4==0:
+#         tmp = np.zeros((128))
+#         for j in range(4):
+#             tmp += np.sum(sifts[i+j][0,:]/512,axis=0) # 수정 필요!
+#         for j in range(4):
+#             if i+j>=D:
+#                 break
+#             centers[i+j,:] = tmp.copy()
+
+# # 4개 평균
+# for i in range(D):
+#     if i%4==0:
+#         tmp = np.zeros((128))
+#         for j in range(4):
+#             tmp += sifts[i+j][0,:]/4
+#
+#         for j in range(4):
+#             if i+j>=D:
+#                 break
+#             centers[i+j,:] = tmp.copy()
 
 # 중심 임의로 D개.(각 이미지들 처음 feature로 하기)
 # centers[:,:] = features[0:D,:].copy()
+
 clusters = [] # (1000,x)
 
 # k means 학습
 Learn = 20
 for i in range(Learn): # 학습 횟수
+    _d = np.zeros((N, D), dtype=np.float32)
     for j in range(N):
         cluster = np.zeros(len(sifts[j]),dtype=int)
         print(j)
@@ -82,7 +108,14 @@ for i in range(Learn): # 학습 횟수
             cluster[k] = mins
             if i==Learn-1: # 마지막에 d계산.
                 d[j][mins] += 1
+            _d[j][mins] += 1
         clusters.append(cluster)
+
+    # descriptor 파일 만들기.
+    with open("./A3_2014312993_{}.des".format(i), "wb") as f:
+        f.write(N_np.tobytes())
+        f.write(D_np.tobytes())
+        f.write(_d.tobytes())
 
     # 중심 한 클러스터 중심값으로 갱신.
     clusters_cnt = np.zeros((D))
@@ -98,8 +131,6 @@ for i in range(Learn): # 학습 횟수
 
 print(d)
 print(np.sum(d))
-
-
 
 # descriptor 파일 만들기.
 with open("./A3_2014312993.des", "wb") as f:
