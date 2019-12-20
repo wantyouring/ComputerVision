@@ -70,7 +70,7 @@ for i in range(1000):
 clusters = [] # (1000,x)
 
 # k means 학습
-for i in range(100): # 학습 횟수
+for i in range(20): # 학습 횟수
     for j in range(N):
         cluster = np.zeros(len(sifts[j]),dtype=int)
         print(j)
@@ -79,7 +79,8 @@ for i in range(100): # 학습 횟수
             dis = np.linalg.norm(dis_center,axis=1)
             mins = np.argmin(dis) # D까지 중 최소 index
             cluster[k] = mins
-            d[j][mins] += 1
+            if i==5: # 마지막에 d계산.
+                d[j][mins] += 1
         clusters.append(cluster)
 
     # 중심 한 클러스터 중심값으로 갱신.
@@ -96,6 +97,8 @@ for i in range(100): # 학습 횟수
 
 print(d)
 print(np.sum(d))
+
+
 
 # descriptor 파일 만들기.
 with open("./A3_2014312993.des", "wb") as f:
