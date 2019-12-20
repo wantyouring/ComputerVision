@@ -31,10 +31,22 @@ eval.exe
 '''
 sift features 
 '''
+N = 1000
+D = 1000
 
-sifts = []
+sifts = [] # (1000,x,128)
+features = np.zeros((760512,128),dtype=np.float32)
+clusters = np.zeros((D,),dtype=int)
+_feature_i = 0
 
-# sift들 불러오기.
+N_np = np.array([N],dtype=np.int32)
+D_np = np.array([D],dtype=np.int32)
+d = np.zeros((N,D),dtype=np.float32)
+
+print(N_np)
+print(D_np)
+
+# sift들 불러오기, kmeans clustering용 붙여서 저장.
 for i in range(100000,101000):
     with open("./sift/sift{}".format(i), "rb") as f:
         sift = []
@@ -43,23 +55,52 @@ for i in range(100000,101000):
         np_sift = np.asarray(sift)
         np_sift = np.reshape(np_sift, (int(len(sift) / 128), 128))
         sifts.append(np_sift)
+        features[_feature_i:_feature_i + int(len(sift) / 128),0:128] = np_sift.copy()
+        _feature_i += int(len(sift) / 128)
 
 print(np.shape(sifts))
 
-# sift 거리 비교하기.
+centers = np.zeros((D,128),dtype=np.float32) # 중심 좌표들 저장. (D,128)
 
-# feature matching을 해서 일정 threshold이하로 매칭되는게 많은 이미지 판별.
-print(sifts[0])
-print(sifts[1])
+for i in range(1000):
+    centers[i,:] = sifts[i][0,:].copy()
 
-# print(np.array(sifts[1]) - np.array(sifts[0]))
-# print(sifts[1] - sifts[0])
+# 중심 임의로 D개.(각 이미지들 처음 feature로 하기)
+# centers[:,:] = features[0:D,:].copy()
+clusters = [] # (1000,x)
 
-N = np.array([1000])
-D = np.array(512)
-d = np.zeros((1000,512),dtype=np.float32)
+# k means 학습
+for i in range(100): # 학습 횟수
+    for j in range(N):
+        cluster = np.zeros(len(sifts[j]),dtype=int)
+        print(j)
+        for k in range(len(sifts[j])):
+            dis_center = sifts[j][k,:] - centers[:,:] # 1줄 빼기 center들.
+            dis = np.linalg.norm(dis_center,axis=1)
+            mins = np.argmin(dis) # D까지 중 최소 index
+            cluster[k] = mins
+            d[j][mins] += 1
+        clusters.append(cluster)
 
+    # 중심 한 클러스터 중심값으로 갱신.
+    clusters_cnt = np.zeros((D))
+    clusters_avg = np.zeros((D, 128))
+
+    print("len(clusters[j]):{}".format(len(clusters[j])))
+
+    for j in range(N):
+        for k in range(len(clusters[j])):
+            clusters_avg[clusters[j][k]] += sifts[j][k]
+            clusters_cnt[clusters[j][k]] += 1
+    centers = (clusters_avg / np.reshape((clusters_cnt+np.finfo(float).eps),(-1,1))).copy()
+
+print(d)
+print(np.sum(d))
+
+# descriptor 파일 만들기.
 with open("./A3_2014312993.des", "wb") as f:
-    f.write(N.tobytes())
-    f.write(D.tobytes())
+    f.write(N_np.tobytes())
+    f.write(D_np.tobytes())
     f.write(d.tobytes())
+
+
